@@ -4,10 +4,9 @@
 
 import sys
 from cpu import *
-
+file_name = sys.argv[1]
 cpu = CPU()
 
 
-file_name = sys.argv[1]
 cpu.load(file_name)
 cpu.run()

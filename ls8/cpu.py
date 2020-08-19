@@ -29,7 +29,7 @@ class CPU:
         self.branchtable[LDI] = self.handle_LDI
         self.branchtable[PRN] = self.handle_PRN
         # self.branchtable[ADD] = self.handle_ADD
-        # self.branchtable[MUL] = self.handle_MUL
+        self.branchtable[MUL] = self.handle_MUL
         # self.branchtable[PUSH] = self.handle_PUSH
         # self.branchtable[POP] = self.handle_POP
         # self.branchtable[CALL] = self.handle_CALL
@@ -41,47 +41,32 @@ class CPU:
     def ram_write(self, mar, mdr):
         self.ram[mar] = mdr
 
-    def handle_LDI(self):
-        operand_a = self.ram_read(self.pc + 1)
-        operand_b = self.ram_read(self.pc + 2)
+    def handle_LDI(self, operand_a, operand_b):
+
         self.reg[operand_a] = operand_b
 
-    def handle_HLT(self):
+    def handle_HLT(self, a, b):
         self.running = False
 
-    def handle_PRN(self):
-        reg_num = self.ram_read(self.pc + 1)
-        print(self.reg[reg_num])
+    def handle_PRN(self, a):
+        # reg_num = self.ram_read(self.pc + 1)
+        print(self.reg[a])
+
+    def handle_MUL(self, a, b):
+        self.alu("MUL", a, b)
 
     def load(self, file_name):
         """Load a program into memory."""
 
         address = 0
 
-        # For now, we've just hardcoded a program:
-
-        # program = [
-        #     # From print8.ls8
-        #     0b10000010,  # LDI R0,8
-        #     0b00000000,
-        #     0b00001000,
-        #     0b01000111,  # PRN R0
-        #     0b00000000,
-        #     0b00000001,  # HLT
-        # ]
-
-        # for instruction in program:
-        #     self.ram[address] = instruction
-        #     address += 1
-
         try:
             with open(file_name) as file:
                 for line in file:
-                    split_line = line.split('#')[0]
-                    command = split_line.strip()
-                    if command == "":
+                    split_line = line.split('#')[0].strip()
+                    if split_line == "":
                         continue
-                    instructions = int(command, 2)
+                    instructions = int(split_line, 2)
                     self.ram[address] = instructions
                     address += 1
         except FileNotFoundError:
@@ -94,6 +79,10 @@ class CPU:
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         # elif op == "SUB": etc
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
+        elif op == "PRN":
+            self.handle_PRN(reg_a)
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -119,16 +108,20 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
+
         while self.running:
+            # print("running")
             # Instruction Register #missing Operand a/b
             ir = self.ram_read(self.pc)
+            ir2 = self.ram_read(self.pc + 1)
+            ir3 = self.ram_read(self.pc + 2)
+            # value = ir
+            # op_count = value >> 6
+            # ir_length = 1 + op_count
+            self.branchtable[ir](ir2, ir3)
+            if ir != CALL and ir != RET:
+                self.pc += (ir >> 6) + 1
 
-            value = ir
-            op_count = value >> 6
-            ir_length = 1 + op_count
-            self.branchtable[ir]()  # operand as AR
             if ir == 0 or None:  # check instruction for print(PRN)
                 print(f"Unknown Instruction: {ir}")
-                sys.exit()
-            if ir != CALL and ir != RET:
-                self.pc += ir_length
+                # sys.exit()
