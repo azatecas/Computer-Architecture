@@ -28,12 +28,12 @@ class CPU:
         self.branchtable[HLT] = self.handle_HLT
         self.branchtable[LDI] = self.handle_LDI
         self.branchtable[PRN] = self.handle_PRN
-        # self.branchtable[ADD] = self.handle_ADD
+        self.branchtable[ADD] = self.handle_ADD
         self.branchtable[MUL] = self.handle_MUL
-        # self.branchtable[PUSH] = self.handle_PUSH
-        # self.branchtable[POP] = self.handle_POP
-        # self.branchtable[CALL] = self.handle_CALL
-        # self.branchtable[RET] = self.handle_RET
+        self.branchtable[PUSH] = self.handle_PUSH
+        self.branchtable[POP] = self.handle_POP
+        self.branchtable[CALL] = self.handle_CALL
+        self.branchtable[RET] = self.handle_RET
 
     def ram_read(self, mar):
         return self.ram[mar]
@@ -42,18 +42,49 @@ class CPU:
         self.ram[mar] = mdr
 
     def handle_LDI(self, operand_a, operand_b):
-
         self.reg[operand_a] = operand_b
 
     def handle_HLT(self, a, b):
         self.running = False
 
-    def handle_PRN(self, a):
+    def handle_PRN(self, a, b):
         # reg_num = self.ram_read(self.pc + 1)
         print(self.reg[a])
 
+    def handle_ADD(self, a, b):
+        self.alu("ADD", a, b)
+
     def handle_MUL(self, a, b):
         self.alu("MUL", a, b)
+
+    def handle_PUSH(self, a, b):
+        self.reg[7] -= 1
+        register = self.ram_read(self.pc + 1)
+        value = self.reg[register]
+        sp = self.reg[7]
+        self.ram[sp] = value
+
+    def handle_POP(self, a, b):
+        sp = self.reg[7]
+        register = self.ram_read(self.pc + 1)
+        value = self.ram[sp]
+        self.reg[register] = value
+        self.reg[7] += 1
+
+    def handle_CALL(self, a, b):
+        reg = self.ram_read(self.pc + 1)
+        address = self.reg[reg]
+        return_address = self.pc + 2
+        self.reg[7] -= 1
+        sp = self.reg[7]
+        self.ram[sp] = return_address
+        self.pc = address
+
+    def handle_RET(self, a, b):
+        sp = self.reg[7]
+        return_address = self.ram[rp]
+        self.reg[7] += 1
+        self.pc = return_address
 
     def load(self, file_name):
         """Load a program into memory."""
